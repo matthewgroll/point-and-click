@@ -35,6 +35,14 @@ def cactus(x_val_cact, y_val_cact):
         gameDisplay.blit(cactusImg_2, (x_val_cact, y_val_cact))
 
 
+def cursor(x_val_mouse, y_val_mouse):
+    gameDisplay.blit(pointerImg, (x_val_mouse - 96/2, y_val_mouse - 96/2))
+
+
+def cursor_fired(x_val_mouse, y_val_mouse):
+    gameDisplay.blit(fireImg, (x_val_mouse - 96/2, y_val_mouse - 96/2))
+
+
 def message_display(text, x_pos, y_pos):
     font = pygame.font.SysFont('Georgia', 15)
 
@@ -47,11 +55,15 @@ def message_display(text, x_pos, y_pos):
 cowboyImg = pygame.image.load('images/cowboy.png')
 cactusImg_1 = pygame.image.load('images/cactus_1.png')
 cactusImg_2 = pygame.image.load('images/cactus_2.png')
+pointerImg = pygame.image.load('images/crosshair.png')
+fireImg = pygame.image.load('images/crosshair_fired.png')
 
 
 def game_loop():
-    x = (display_width * 0.15)
-    y = (display_height * 0.35)
+    starting_x = display_width * 0.15
+    starting_y = display_height * 0.37
+    x = starting_x
+    y = starting_y
     cact_x = (display_width * 0.75)
     cact_y = (display_height * 0.35)
 
@@ -67,44 +79,62 @@ def game_loop():
             if event.type == pygame.QUIT:
                 game_exit = True
 
+            speed = 7
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    x_change += -5
+                    x_change += -speed
                 if event.key == pygame.K_RIGHT:
-                    x_change += 5
+                    x_change += speed
                 if event.key == pygame.K_UP:
-                    y_change += -5
+                    y_change += -speed
                 if event.key == pygame.K_DOWN:
-                    y_change += 5
+                    y_change += speed
                 if event.key == pygame.K_z:
                     talking = True
 
+           # if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+           #     cursor_fired(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1])
+           # else:
+           #     cursor(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1])
+
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
-                    x_change += 5
+                    x_change += speed
                 if event.key == pygame.K_RIGHT:
-                    x_change += -5
+                    x_change += -speed
                 if event.key == pygame.K_UP:
-                    y_change += 5
+                    y_change += speed
                 if event.key == pygame.K_DOWN:
-                    y_change += -5
+                    y_change += -speed
 
         x += x_change
         y += y_change
         gameDisplay.fill(black)
+        # draw basic shapes for background
+        pygame.draw.line(gameDisplay, white, (0, display_height * 0.65), (display_width, display_height * 0.65))
+        # player box confines
+        box_x = starting_x - 50
+        box_y = starting_y - 200
+        box_width = 250
+        box_height = 350
+        pygame.draw.rect(gameDisplay, white, [box_x, box_y, box_width, box_height], 2)
         cowboy(x, y)
 
-        if x > display_width - cowboy_width:
-            x = display_width - cowboy_width
-        elif x < 0:
-            x = 0
-        if y > display_height - cowboy_height:
-            y = display_height - cowboy_height
-        elif y < 0:
-            y = 0
+        if x > box_x + box_width - cowboy_width:
+            x = box_x + box_width - cowboy_width
+        elif x < box_x:
+            x = box_x
+        if y > box_y + box_height - cowboy_height:
+            y = box_y + box_height - cowboy_height
+        elif y < box_y:
+            y = box_y
         cactus(cact_x, cact_y)
         if talking:
             message_display("Hello!", cact_x - 20, cact_y - 20)
+        if pygame.mouse.get_pressed()[0]:
+            cursor_fired(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1])
+        else:
+            cursor(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1])
         pygame.display.update()
         clock.tick(60)
 
