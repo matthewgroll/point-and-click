@@ -7,3 +7,5 @@ Controls:
 Arrow keys: Movement
 
 Mouse1: Fire
+
+Fire at incoming needles and at the enemy cactus to win
