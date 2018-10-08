@@ -12,6 +12,7 @@ cactus_width = 86
 cactus_height = 94
 needle_width = 96
 needle_height = 42
+enemy_bar_width = 4
 
 black = (0, 0, 0)
 white = (255, 255, 255)
@@ -22,11 +23,11 @@ pygame.display.set_caption('Point and Click')
 clock = pygame.time.Clock()
 
 cowboyImg = pygame.image.load('images/cowboy.png')
-cactusImg_1 = pygame.image.load('images/cactus_1.png')
-cactusImg_2 = pygame.image.load('images/cactus_2.png')
+cactusImg_1 = pygame.image.load('images/cactus.png')
 pointerImg = pygame.image.load('images/crosshair.png')
 fireImg = pygame.image.load('images/crosshair_fired.png')
 hpImg = pygame.image.load('images/hp_bar.png')
+enemyBarImg = pygame.image.load('images/enemy_bar.png')
 needleImg = pygame.image.load('images/needle.png')
 
 
@@ -41,6 +42,7 @@ cactus = display(cactusImg_1)
 cursor = display(pointerImg)
 cursor_fired = display(fireImg)
 hp_bar = display(hpImg)
+enemy_bar = display(enemyBarImg)
 needle = display(needleImg)
 
 
@@ -58,10 +60,10 @@ def game_loop():
     starting_y = display_height * 0.37
     x = starting_x
     y = starting_y
-    cact_x = (display_width * 0.75)
-    cact_y = (display_height * 0.35)
-    starting_needle_x = cact_x
-    starting_needle_y = cact_y
+    cactus_x = (display_width * 0.75)
+    cactus_y = (display_height * 0.35)
+    starting_needle_x = cactus_x
+    starting_needle_y = cactus_y
     needle_x = starting_needle_x
     needle_y = starting_needle_y
     bar_x = 5
@@ -69,12 +71,14 @@ def game_loop():
 
     talking = False
     game_over = False
+    game_won = False
     game_exit = False
     hp = 25
+    cactus_hp = 180
 
     x_change = 0
     y_change = 0
-    needle_x_change = 7
+    needle_x_change = 12
 
     while not game_exit:
         gameDisplay.fill(black)
@@ -83,7 +87,8 @@ def game_loop():
         pygame.draw.rect(gameDisplay, black, player_hitbox, 2)
         needle_hitbox = pygame.Rect(needle_x, needle_y, needle_width, needle_height)
         pygame.draw.rect(gameDisplay, black, needle_hitbox, 2)
-
+        cactus_hitbox = pygame.Rect(cactus_x, cactus_y, cactus_width, cactus_height)
+        pygame.draw.rect(gameDisplay, black, cactus_hitbox, 2)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_exit = True
@@ -115,20 +120,23 @@ def game_loop():
         y += y_change
         needle_x -= needle_x_change
 
-        if hp <= 0:
+        if hp <= 0 and not game_won:
             hp = 0
             game_over = True
 
         if game_over:
             message_display("GAME OVER!", display_width/2, 50, 70)
+        if cactus_hp <= 0:
+            game_won = True
+            message_display("YOU WIN!", display_width/2 , 50, 70)
 
         # draw basic shapes for background
         pygame.draw.line(gameDisplay, white, (0, display_height * 0.65), (display_width, display_height * 0.65))
         # player box confines
         box_x = starting_x - 50
-        box_y = starting_y - 200
+        box_y = starting_y - 150
         box_width = 250
-        box_height = 350
+        box_height = 300
         pygame.draw.rect(gameDisplay, white, [box_x, box_y, box_width, box_height], 2)
         cowboy(x, y)
         # keep player within confines of box
@@ -141,13 +149,15 @@ def game_loop():
         elif y < box_y:
             y = box_y
         # draw cactus
-        cactus(cact_x, cact_y)
+        cactus(cactus_x, cactus_y)
         # draw hp bar based on value of hp
         # ensures that when hp value is changed, appropriate number of bars are drawn
         for num in range(hp):
             hp_bar(bar_x + 30*num, bar_y)
+        for num in range(cactus_hp):
+            enemy_bar(bar_x + num*enemy_bar_width, bar_y - 60)
         if talking:
-            message_display("Hello!", cact_x - 20, cact_y - 20, 15)
+            message_display("Hello!", cactus_x - 20, cactus_y - 20, 15)
         center_bal = 96/2
         # manage cursor display
         if pygame.mouse.get_pressed()[0]:
@@ -158,9 +168,13 @@ def game_loop():
         needle(needle_x, needle_y)
         if needle_x <= 0:
             needle_x = starting_needle_x
-            needle_y = starting_needle_y + random.randint(-100, 50)
+            needle_y = starting_needle_y + random.randint(-125, 75)
         if player_hitbox.colliderect(needle_hitbox):
             hp -= 1
+        if pygame.mouse.get_pressed()[0] and needle_hitbox.collidepoint(pygame.mouse.get_pos()):
+            needle_x = -100
+        if pygame.mouse.get_pressed()[0] and cactus_hitbox.collidepoint(pygame.mouse.get_pos()):
+            cactus_hp -= 1
         pygame.display.update()
         # fps
         clock.tick(60)
