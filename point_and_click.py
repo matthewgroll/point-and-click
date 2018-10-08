@@ -126,7 +126,7 @@ def game_loop():
 
         if game_over:
             message_display("GAME OVER!", display_width/2, 50, 70)
-        if cactus_hp <= 0:
+        if cactus_hp <= 0 and not game_over:
             game_won = True
             message_display("YOU WIN!", display_width/2 , 50, 70)
 
