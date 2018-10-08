@@ -60,22 +60,29 @@ def game_loop():
     y = starting_y
     cact_x = (display_width * 0.75)
     cact_y = (display_height * 0.35)
-    needle_x = cact_x
-    needle_y = cact_y + random.randint(-20, 20)
+    starting_needle_x = cact_x
+    starting_needle_y = cact_y
+    needle_x = starting_needle_x
+    needle_y = starting_needle_y
     bar_x = 5
     bar_y = display_height - 100
 
     talking = False
     game_over = False
     game_exit = False
-    hp = 10
+    hp = 25
 
     x_change = 0
     y_change = 0
-    needle_x_change = 0
+    needle_x_change = 7
 
     while not game_exit:
         gameDisplay.fill(black)
+        # hitboxes can be made visible for testing purposes
+        player_hitbox = pygame.Rect(x, y, cowboy_width - 15, cowboy_height)
+        pygame.draw.rect(gameDisplay, black, player_hitbox, 2)
+        needle_hitbox = pygame.Rect(needle_x, needle_y, needle_width, needle_height)
+        pygame.draw.rect(gameDisplay, black, needle_hitbox, 2)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -93,8 +100,6 @@ def game_loop():
                     y_change += speed
                 if event.key == pygame.K_z:
                     talking = True
-                if event.key == pygame.K_f:
-                    needle_x_change = 5
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
@@ -111,6 +116,7 @@ def game_loop():
         needle_x -= needle_x_change
 
         if hp <= 0:
+            hp = 0
             game_over = True
 
         if game_over:
@@ -149,17 +155,15 @@ def game_loop():
         else:
             cursor(pygame.mouse.get_pos()[0] - center_bal, pygame.mouse.get_pos()[1] - center_bal)
         # manage collision with needles
-
-        player_hitbox = pygame.Rect(x, y, cowboy_width - 15, cowboy_height)
-        pygame.draw.rect(gameDisplay, white, player_hitbox, 2)
-        needle_hitbox = pygame.Rect(needle_x, needle_y, needle_width, needle_height)
-        pygame.draw.rect(gameDisplay, white, needle_hitbox, 2)
         needle(needle_x, needle_y)
+        if needle_x <= 0:
+            needle_x = starting_needle_x
+            needle_y = starting_needle_y + random.randint(-100, 50)
         if player_hitbox.colliderect(needle_hitbox):
             hp -= 1
         pygame.display.update()
         # fps
-        clock.tick(30)
+        clock.tick(60)
 
 
 game_loop()
