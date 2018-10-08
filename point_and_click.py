@@ -2,14 +2,13 @@ import pygame
 import time
 
 pygame.init()
-
+# 800 by 600 default
 display_width = 800
 display_height = 600
 cowboy_width = 60
 cowboy_height = 83
 cactus_width = 86
 cactus_height = 94
-
 
 black = (0, 0, 0)
 white = (255, 255, 255)
@@ -43,6 +42,10 @@ def cursor_fired(x_val_mouse, y_val_mouse):
     gameDisplay.blit(fireImg, (x_val_mouse - 96/2, y_val_mouse - 96/2))
 
 
+def hp_bar(x_val_bar, y_val_bar):
+    gameDisplay.blit(hpImg, (x_val_bar, y_val_bar))
+
+
 def message_display(text, x_pos, y_pos):
     font = pygame.font.SysFont('Georgia', 15)
 
@@ -57,7 +60,8 @@ cactusImg_1 = pygame.image.load('images/cactus_1.png')
 cactusImg_2 = pygame.image.load('images/cactus_2.png')
 pointerImg = pygame.image.load('images/crosshair.png')
 fireImg = pygame.image.load('images/crosshair_fired.png')
-
+hpImg = pygame.image.load('images/hp_bar.png')
+needleImg = pygame.image.load('images/needle.png')
 
 def game_loop():
     starting_x = display_width * 0.15
@@ -66,9 +70,13 @@ def game_loop():
     y = starting_y
     cact_x = (display_width * 0.75)
     cact_y = (display_height * 0.35)
+    bar_x = 5
+    bar_y = display_height - 100
 
     talking = False
+    game_over = False
     game_exit = False
+    hp = 10
 
     x_change = 0
     y_change = 0
@@ -92,11 +100,6 @@ def game_loop():
                 if event.key == pygame.K_z:
                     talking = True
 
-           # if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-           #     cursor_fired(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1])
-           # else:
-           #     cursor(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1])
-
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
                     x_change += speed
@@ -109,6 +112,8 @@ def game_loop():
 
         x += x_change
         y += y_change
+        if hp <= 0:
+            game_over = True
         gameDisplay.fill(black)
         # draw basic shapes for background
         pygame.draw.line(gameDisplay, white, (0, display_height * 0.65), (display_width, display_height * 0.65))
@@ -119,7 +124,7 @@ def game_loop():
         box_height = 350
         pygame.draw.rect(gameDisplay, white, [box_x, box_y, box_width, box_height], 2)
         cowboy(x, y)
-
+        # keep player within confines of box
         if x > box_x + box_width - cowboy_width:
             x = box_x + box_width - cowboy_width
         elif x < box_x:
@@ -128,7 +133,12 @@ def game_loop():
             y = box_y + box_height - cowboy_height
         elif y < box_y:
             y = box_y
+        # draw cactus
         cactus(cact_x, cact_y)
+        # draw hp bar based on value of hp
+        # ensures that when hp value is changed, appropriate number of bars are drawn
+        for num in range(hp):
+            hp_bar(bar_x + 30*num, bar_y)
         if talking:
             message_display("Hello!", cact_x - 20, cact_y - 20)
         if pygame.mouse.get_pressed()[0]:
