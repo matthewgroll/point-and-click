@@ -44,8 +44,8 @@ hp_bar = display(hpImg)
 needle = display(needleImg)
 
 
-def message_display(text, x_pos, y_pos):
-    font = pygame.font.SysFont('Georgia', 15)
+def message_display(text, x_pos, y_pos, font_size):
+    font = pygame.font.SysFont('Georgia', font_size)
 
     def talk(x_text, y_text):
         gameDisplay.blit(font.render(text, True, white), (x_text, y_text))
@@ -113,6 +113,9 @@ def game_loop():
         if hp <= 0:
             game_over = True
 
+        if game_over:
+            message_display("GAME OVER!", display_width/2, 50, 70)
+
         # draw basic shapes for background
         pygame.draw.line(gameDisplay, white, (0, display_height * 0.65), (display_width, display_height * 0.65))
         # player box confines
@@ -138,7 +141,7 @@ def game_loop():
         for num in range(hp):
             hp_bar(bar_x + 30*num, bar_y)
         if talking:
-            message_display("Hello!", cact_x - 20, cact_y - 20)
+            message_display("Hello!", cact_x - 20, cact_y - 20, 15)
         center_bal = 96/2
         # manage cursor display
         if pygame.mouse.get_pressed()[0]:
