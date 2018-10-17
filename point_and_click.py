@@ -1,183 +1,190 @@
 import pygame
-import time
 import random
 
 pygame.init()
-# 800 by 600 default
-display_width = 800
-display_height = 600
-cowboy_width = 60
-cowboy_height = 83
-cactus_width = 86
-cactus_height = 94
-needle_width = 96
-needle_height = 42
-enemy_bar_width = 4
 
-black = (0, 0, 0)
-white = (255, 255, 255)
-red = (255, 0, 0)
+# basic game constants
+DISPLAY_WIDTH = 800
+DISPLAY_HEIGHT = 600
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 
-gameDisplay = pygame.display.set_mode((display_width, display_height))
-pygame.display.set_caption('Point and Click')
-clock = pygame.time.Clock()
-
-cowboyImg = pygame.image.load('images/cowboy.png')
-cactusImg_1 = pygame.image.load('images/cactus.png')
-pointerImg = pygame.image.load('images/crosshair.png')
-fireImg = pygame.image.load('images/crosshair_fired.png')
-hpImg = pygame.image.load('images/hp_bar.png')
-enemyBarImg = pygame.image.load('images/enemy_bar.png')
-needleImg = pygame.image.load('images/needle.png')
+# dimensions for hit boxes
+cowboy_width, cowboy_height = 60, 83
+cactus_width, cactus_height = 86, 94
+needle_width, needle_height = 96, 42
 
 
-def display(img):
+# set up display, each sprite capable of movement
+def display(filename):
     def display_func(x, y):
-        gameDisplay.blit(img, (x, y))
+        gameDisplay.blit(pygame.image.load(filename), (x, y))
     return display_func
 
 
-cowboy = display(cowboyImg)
-cactus = display(cactusImg_1)
-cursor = display(pointerImg)
-cursor_fired = display(fireImg)
-hp_bar = display(hpImg)
-enemy_bar = display(enemyBarImg)
-needle = display(needleImg)
+# define appropriate png files for sprites
+cowboy = display('images/cowboy.png')
+cactus = display('images/cactus.png')
+crosshair = display('images/crosshair.png')
+crosshair_fired = display('images/crosshair_fired.png')
+hp_bar = display('images/hp_bar.png')
+enemy_bar = display('images/enemy_bar.png')
+needle = display('images/needle.png')
 
 
+# function for displaying text on screen
 def message_display(text, x_pos, y_pos, font_size):
     font = pygame.font.SysFont('Georgia', font_size)
+    gameDisplay.blit(font.render(text, True, WHITE), (x_pos, y_pos))
 
-    def talk(x_text, y_text):
-        gameDisplay.blit(font.render(text, True, white), (x_text, y_text))
 
-    talk(x_pos, y_pos)
+# set up window display, window text, and in-game clock
+gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT))
+pygame.display.set_caption('Passion Fruit')
+clock = pygame.time.Clock()
 
 
 def game_loop():
-    starting_x = display_width * 0.15
-    starting_y = display_height * 0.37
-    x = starting_x
-    y = starting_y
-    cactus_x = (display_width * 0.75)
-    cactus_y = (display_height * 0.35)
-    starting_needle_x = cactus_x
-    starting_needle_y = cactus_y
-    needle_x = starting_needle_x
-    needle_y = starting_needle_y
-    bar_x = 5
-    bar_y = display_height - 100
-
-    talking = False
-    game_over = False
-    game_won = False
     game_exit = False
-    hp = 25
-    cactus_hp = 180
+    game_won = False
+    game_over = False
+    debug = False
 
-    x_change = 0
-    y_change = 0
-    needle_x_change = 12
+    cowboy_init_x, cowboy_init_y = DISPLAY_WIDTH * 0.2, DISPLAY_HEIGHT * 0.2
+    cowboy_x, cowboy_y = cowboy_init_x, cowboy_init_y
+    cactus_init_x, cactus_init_y = DISPLAY_WIDTH * 0.8, DISPLAY_HEIGHT * 0.3
+    cactus_x, cactus_y = cactus_init_x, cactus_init_y
+    needle_x, needle_y = cactus_init_x, cactus_init_y
+
+    cowboy_speed = 8
+    needle_speed = 12
+
+    cowboy_x_change, cowboy_y_change = 0, 0
+    box_width, box_height = cowboy_width * 4, cowboy_height * 4
+    box_x, box_y = cowboy_init_x - cowboy_width * 2, cowboy_init_y - cowboy_height*1.3
+
+    bar_x, bar_y = 5, DISPLAY_HEIGHT - 100
+    enemy_bar_x, enemy_bar_y = bar_x, bar_y - 70
+    bar_width = 30
+    player_hp, player_atk = 23, 1
+    cactus_hp, cactus_atk = 10, 2
+
+    FPS = 30
+    cooldown = 30 * 0.5
+    invuln_time = cooldown
+    damaged = False
 
     while not game_exit:
-        gameDisplay.fill(black)
-        # hitboxes can be made visible for testing purposes
-        player_hitbox = pygame.Rect(x, y, cowboy_width - 15, cowboy_height)
-        pygame.draw.rect(gameDisplay, black, player_hitbox, 2)
-        needle_hitbox = pygame.Rect(needle_x, needle_y, needle_width, needle_height)
-        pygame.draw.rect(gameDisplay, black, needle_hitbox, 2)
+        gameDisplay.fill(BLACK)
+
+        player_hitbox = pygame.Rect(cowboy_x, cowboy_y, cowboy_width - 15, cowboy_height)
         cactus_hitbox = pygame.Rect(cactus_x, cactus_y, cactus_width, cactus_height)
-        pygame.draw.rect(gameDisplay, black, cactus_hitbox, 2)
+        needle_hitbox = pygame.Rect(needle_x, needle_y, needle_width, needle_height)
+
+        if debug:
+            pygame.draw.rect(gameDisplay, WHITE, player_hitbox, 2)
+            pygame.draw.rect(gameDisplay, WHITE, cactus_hitbox, 2)
+            pygame.draw.rect(gameDisplay, WHITE, needle_hitbox, 2)
+
+        # define conditions for having game won or lost
+        if player_hp <= 0 and not game_won:
+            game_over = True
+            message_display("GAME OVER!", DISPLAY_WIDTH / 2, 50, 70)
+        if cactus_hp <= 0 and not game_over:
+            game_won = True
+            message_display("YOU WIN!", DISPLAY_WIDTH / 2, 50, 70)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_exit = True
 
-            speed = 7
+            # movement based on keys being pressed
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    x_change += -speed
+                    cowboy_x_change += -cowboy_speed
                 if event.key == pygame.K_RIGHT:
-                    x_change += speed
+                    cowboy_x_change += cowboy_speed
                 if event.key == pygame.K_UP:
-                    y_change += -speed
+                    cowboy_y_change += -cowboy_speed
                 if event.key == pygame.K_DOWN:
-                    y_change += speed
-                if event.key == pygame.K_z:
-                    talking = True
+                    cowboy_y_change += cowboy_speed
 
+            # movement negated when keys are lifted
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
-                    x_change += speed
+                    cowboy_x_change += cowboy_speed
                 if event.key == pygame.K_RIGHT:
-                    x_change += -speed
+                    cowboy_x_change += -cowboy_speed
                 if event.key == pygame.K_UP:
-                    y_change += speed
+                    cowboy_y_change += cowboy_speed
                 if event.key == pygame.K_DOWN:
-                    y_change += -speed
+                    cowboy_y_change += -cowboy_speed
 
-        x += x_change
-        y += y_change
-        needle_x -= needle_x_change
+            # event for firing at cactus: deals damage equal to player_atk
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = event.pos
+                crosshair_fired(mouse_x - center_bal, mouse_y - center_bal)
+                if cactus_hitbox.collidepoint(mouse_x, mouse_y):
+                    cactus_hp -= player_atk
+                if needle_hitbox.collidepoint(mouse_x, mouse_y):
+                    # ideally the needle object would be temporarily disabled, for now it just moves out of bounds
+                    needle_y = -100
+                    clock.tick(17)
+                    needle_x = cactus_init_x
 
-        if hp <= 0 and not game_won:
-            hp = 0
-            game_over = True
-
-        if game_over:
-            message_display("GAME OVER!", display_width/2, 50, 70)
-        if cactus_hp <= 0 and not game_over:
-            game_won = True
-            message_display("YOU WIN!", display_width/2 , 50, 70)
-
-        # draw basic shapes for background
-        pygame.draw.line(gameDisplay, white, (0, display_height * 0.65), (display_width, display_height * 0.65))
-        # player box confines
-        box_x = starting_x - 50
-        box_y = starting_y - 150
-        box_width = 250
-        box_height = 300
-        pygame.draw.rect(gameDisplay, white, [box_x, box_y, box_width, box_height], 2)
-        cowboy(x, y)
-        # keep player within confines of box
-        if x > box_x + box_width - cowboy_width:
-            x = box_x + box_width - cowboy_width
-        elif x < box_x:
-            x = box_x
-        if y > box_y + box_height - cowboy_height:
-            y = box_y + box_height - cowboy_height
-        elif y < box_y:
-            y = box_y
-        # draw cactus
+        # set up cowboy and movement
+        cowboy(cowboy_x, cowboy_y)
+        cowboy_x += cowboy_x_change
+        cowboy_y += cowboy_y_change
+        
+        # set up cactus
         cactus(cactus_x, cactus_y)
-        # draw hp bar based on value of hp
-        # ensures that when hp value is changed, appropriate number of bars are drawn
-        for num in range(hp):
-            hp_bar(bar_x + 30*num, bar_y)
+
+        # set up box and keep player confined within
+        pygame.draw.rect(gameDisplay, WHITE, [box_x, box_y, box_width, box_height], 2)
+        if cowboy_x > box_x + box_width - cowboy_width:
+            cowboy_x = box_x + box_width - cowboy_width
+        elif cowboy_x < box_x:
+            cowboy_x = box_x
+        if cowboy_y > box_y + box_height - cowboy_height:
+            cowboy_y = box_y + box_height - cowboy_height
+        elif cowboy_y < box_y:
+            cowboy_y = box_y
+
+        # purely visual graphics
+        pygame.draw.line(gameDisplay, WHITE, (0, DISPLAY_HEIGHT * 0.60), (DISPLAY_WIDTH, DISPLAY_HEIGHT * 0.60))
+
+        # display player HP and cactus HP bars
+        for num in range(player_hp):
+            hp_bar(bar_x + bar_width * num, bar_y)
         for num in range(cactus_hp):
-            enemy_bar(bar_x + num*enemy_bar_width, bar_y - 60)
-        if talking:
-            message_display("Hello!", cactus_x - 20, cactus_y - 20, 15)
+            enemy_bar(enemy_bar_x + 7 * num, enemy_bar_y)
+
+        # maintain a cross-hair sprite on the player's cursor that fires when mouse1 is pressed
         center_bal = 96/2
-        # manage cursor display
-        if pygame.mouse.get_pressed()[0]:
-            cursor_fired(pygame.mouse.get_pos()[0] - center_bal, pygame.mouse.get_pos()[1] - center_bal)
-        else:
-            cursor(pygame.mouse.get_pos()[0] - center_bal, pygame.mouse.get_pos()[1] - center_bal)
-        # manage collision with needles
+        crosshair(pygame.mouse.get_pos()[0] - center_bal, pygame.mouse.get_pos()[1] - center_bal)
+
+        # generate horizontal needle fire attack
         needle(needle_x, needle_y)
+        needle_x -= needle_speed
         if needle_x <= 0:
-            needle_x = starting_needle_x
-            needle_y = starting_needle_y + random.randint(-125, 75)
-        if player_hitbox.colliderect(needle_hitbox):
-            hp -= 1
-        if pygame.mouse.get_pressed()[0] and needle_hitbox.collidepoint(pygame.mouse.get_pos()):
-            needle_x = -100
-        if pygame.mouse.get_pressed()[0] and cactus_hitbox.collidepoint(pygame.mouse.get_pos()):
-            cactus_hp -= 1
+            needle_x = cactus_init_x
+            needle_y = cactus_init_y + random.randint(-125, 75)
+        if player_hitbox.colliderect(needle_hitbox) and not damaged:
+            player_hp -= cactus_atk
+            damaged = True
+
+        # set up invulnerability period after taking damage
+        if damaged:
+            if invuln_time > 0:
+                invuln_time -= 1
+            if invuln_time <= 0:
+                damaged = False
+                invuln_time = cooldown
+
+        # update entire display at a tick rate (FPS)
         pygame.display.update()
-        # fps
-        clock.tick(60)
+        clock.tick(FPS)
 
 
 game_loop()
